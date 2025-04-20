@@ -57,6 +57,7 @@ def extract_resume_data(pdf_path):
         "projects": ["Project 1", "Project 2"],
         "github_username": "Only the username (no URL, no @ symbol)",
         "linkedin_url": "Full profile URL or null"
+        "email": "Full Email of User"
     }}
     Resume: {resume_text[:3000]}  # Truncate to save tokens
     """
