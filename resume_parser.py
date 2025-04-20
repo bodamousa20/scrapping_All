@@ -53,7 +53,7 @@ def extract_resume_data(pdf_path):
         "location": "City, Country",
         "education": ["Degree, Institution, Year"],
         "skills": ["List", "Of", "Technical", "Skills"],
-        "career_name": "Predict the MOST SPECIFIC job title. Format: '[Seniority] [Tech Stack] [Role] [Industry?]'",
+        "career_name": "Predict the MOST SPECIFIC job title. Format: '[Programming language] [Tech Stack]?]'like that java Backend developer ,python Django devolper ,c# .net devolper",
         "projects": ["Project 1", "Project 2"],
         "github_username": "Only the username (no URL, no @ symbol)",
         "linkedin_url": "Full profile URL or null"
