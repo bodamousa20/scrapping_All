@@ -98,4 +98,3 @@ Resume Text (truncated):
         return json.loads(response.choices[0].message.content)
     except Exception as e:
         return {"error": str(e)}
-
