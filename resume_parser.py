@@ -46,7 +46,7 @@ def extract_resume_data(pdf_path):
 
     resume_text = read_pdf_file(pdf_path)
 
-   prompt = f"""
+    prompt = f"""
 You are a professional resume parser. Extract the following fields from the resume below and respond ONLY in the exact JSON format shown, without adding or removing keys.
 
 Instructions:
