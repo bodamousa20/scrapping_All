@@ -12,8 +12,10 @@ import logging
 import json
 import time
 from resume_parser import pdf_to_image, extract_resume_data
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  
 
 # Temporary Folder for Uploaded Files and Scraped Data
 UPLOAD_FOLDER = tempfile.mkdtemp()
