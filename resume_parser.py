@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file
-import pdfplumber
+import pdfx
 import re
 import json
 from groq import Groq
@@ -46,21 +46,47 @@ def extract_resume_data(pdf_path):
 
     resume_text = read_pdf_file(pdf_path)
 
-    prompt = f"""
-    Extract the following from this resume in STRICT JSON format:
-    {{
-        "name": "Full Name",
-        "location": "City, Country",
-        "education": ["Degree, Institution, Year"],
-        "skills": ["List", "Of", "Technical", "Skills"],
-        "career_name": "Predict the MOST SPECIFIC job title. Format: '[Programming language] [Tech Stack]?]'like that java Backend developer ,python Django devolper ,c# .net devolper",
-        "projects": ["Project 1", "Project 2"],
-        "github_username": "Only the username (no URL, no @ symbol)",
-        "linkedin_url": "Full profile URL or null"
-        "email": "Full Email of User"
-    }}
-    Resume: {resume_text[:3000]}  # Truncate to save tokens
-    """
+   prompt = f"""
+You are a professional resume parser. Extract the following fields from the resume below and respond ONLY in the exact JSON format shown, without adding or removing keys.
+
+Instructions:
+- ONLY extract data if it is explicitly stated in the resume. DO NOT infer or guess missing information.
+- For GitHub and LinkedIn, only return values if actual links or usernames are mentioned directly.
+- If a value is missing, use null or an empty list as appropriate.
+
+Expected JSON structure:
+{{
+    "name": "Full Name",
+    "location": "City, Country",
+    "email": "email@example.com",
+    "education": ["Degree, Institution, Year"],
+    "skills": ["List", "Of", "Technical", "Skills"],  // Only technical skills, no soft skills
+    "career_name": "Predict the MOST SPECIFIC job title based strictly on the resume’s technical skills, tools, and projects — do not guess or generalize. Combine these elements in the title:
+1) Seniority level if stated or implied (e.g., Junior, Mid-Level, Senior, Lead),
+2) The PRIMARY technology, framework, or tool used (e.g., React, Kotlin, Laravel, Flutter, Spring Boot, AutoCAD, Power BI),
+3) Role type (e.g., Developer, Engineer, Architect, Analyst, Designer),
+4) Optional specialization or platform if clear (e.g., Web, Mobile, AI, Embedded, Game, Finance).
+
+The format must be: '[Seniority] [Technology/Tool] [Role] [Optional Specialization or Industry]'
+Return concise but complete titles. DO NOT return vague outputs like 'Frontend Developer', 'Mobile Developer', or 'Software Engineer'. Always include the tech stack or tool when mentioned.
+Examples:
+- 'Junior React Frontend Developer'
+- 'Flutter Mobile App Developer'
+- 'Spring Boot Backend Java Engineer'
+- 'Laravel PHP Backend Developer'
+- 'Power BI Business Analyst'
+- 'AutoCAD Civil Drafting Engineer'
+- 'Entry-Level Illustrator Graphic Designer'
+- 'Senior Python Django Full-Stack Web Developer'
+If the resume lacks enough detail for a full title, return the most specific title based on available data — but never guess missing technologies.",
+    "projects": ["Project 1", "Project 2"],  // Only technical/personal/academic projects
+    "github_username": "Only the username (no URL, no @). Must be mentioned explicitly.",
+    "linkedin_url": "Full URL (must start with https://). Return null if not provided."
+}}
+
+Resume Text (truncated):
+{resume_text}
+"""
 
     try:
         response = client.chat.completions.create(
