@@ -39,12 +39,11 @@ def pdf_to_image(pdf_path):
 
 def extract_resume_data(pdf_path):
     """Extract text and process with Groq"""
-
     def read_pdf_file(pdf_path):
-        with pdfplumber.open(pdf_path) as pdf:
-            return "\n".join([page.extract_text() for page in pdf.pages])
-
-    resume_text = read_pdf_file(pdf_path)
+        pdf = pdfx.PDFx(pdf_path)
+        text = pdf.get_text()
+        urls = pdf.get_references_as_dict().get("url", [])
+        return text + "\n\nExtracted URLs:\n" + "\n".join(urls)
 
     prompt = f"""
 You are a professional resume parser. Extract the following fields from the resume below and respond ONLY in the exact JSON format shown, without adding or removing keys.
