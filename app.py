@@ -15,7 +15,7 @@ from resume_parser import pdf_to_image, extract_resume_data
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  
+CORS(app)  # Enable CORS for all routes
 
 # Temporary Folder for Uploaded Files and Scraped Data
 UPLOAD_FOLDER = tempfile.mkdtemp()
@@ -107,7 +107,7 @@ def process_resume():
         pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(pdf_path)
 
-        # image_path = pdf_to_image(pdf_path)
+        # image_path = pdf_to_image(pdf_path)  # If you need to process PDFs to images
         parsed_data = extract_resume_data(pdf_path)
 
         response = {
@@ -122,7 +122,6 @@ def process_resume():
         for f in os.listdir(app.config['UPLOAD_FOLDER']):
             if f != 'preview.jpg':
                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
-
 
 @app.route('/scrape-courses', methods=['GET'])
 def scrape_courses():
@@ -157,5 +156,5 @@ def scrape_courses():
         'scraped-courses': len(results)
     })
 
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
