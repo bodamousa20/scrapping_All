@@ -1,4 +1,3 @@
-# Flask Application (app.py)
 from flask import Flask, jsonify, request, send_file
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
@@ -22,7 +21,6 @@ UPLOAD_FOLDER = tempfile.mkdtemp()
 ALLOWED_EXTENSIONS = {'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 TEMP_JOBS_DATA_FILE = os.path.join(UPLOAD_FOLDER, 'wuzzuf_jobs_data.json')
-TEMP_COURSES_DATA_FILE = os.path.join(UPLOAD_FOLDER, 'classcentral_courses_data.json')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,14 +42,19 @@ def run_wuzzuf_spider_process(search_query, requiredPages, output_file):
         with open(output_file, 'w') as f:
             json.dump({"error": str(e)}, f)
 
-def run_classcentral_spider_process(search_query, requiredPages, output_file, language='english'):
+def run_classcentral_spider_process(query, pages, output_file, language='en'):
     try:
         settings = get_project_settings()
         settings['FEEDS'] = {
             output_file: {'format': 'json', 'overwrite': True}
         }
         process = CrawlerProcess(settings)
-        process.crawl(ClassCentralSpider, search_query=search_query, requiredPages=requiredPages, language=language)
+        process.crawl(
+            ClassCentralSpider,
+            query=query,
+            pages=pages,
+            language=language
+        )
         process.start()
     except Exception as e:
         logger.error(f"Error running Class Central spider process: {e}")
@@ -63,7 +66,10 @@ def scrape_jobs():
     search_query = request.args.get('query', 'java')
     requiredPages = int(request.args.get('pages', 1))
 
-    process = multiprocessing.Process(target=run_wuzzuf_spider_process, args=(search_query, requiredPages, TEMP_JOBS_DATA_FILE))
+    process = multiprocessing.Process(
+        target=run_wuzzuf_spider_process,
+        args=(search_query, requiredPages, TEMP_JOBS_DATA_FILE)
+    )
     process.start()
     process.join()
 
@@ -107,7 +113,6 @@ def process_resume():
         pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(pdf_path)
 
-        # image_path = pdf_to_image(pdf_path)  # If you need to process PDFs to images
         parsed_data = extract_resume_data(pdf_path)
 
         response = {
@@ -122,39 +127,56 @@ def process_resume():
         for f in os.listdir(app.config['UPLOAD_FOLDER']):
             if f != 'preview.jpg':
                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
-
-@app.route('/scrape-courses', methods=['GET'])
+@app.route("/scrape-courses", methods=["POST"])
 def scrape_courses():
-    search_query = request.args.get('query', 'python')
-    requiredPages = int(request.args.get('pages', 1))
-    language = request.args.get('lang', 'english')
-
-    process = multiprocessing.Process(target=run_classcentral_spider_process, args=(search_query, requiredPages, TEMP_COURSES_DATA_FILE, language))
-    process.start()
-    process.join()
-
-    time.sleep(2)  # Add a delay for course scraping as well
-
     try:
-        with open(TEMP_COURSES_DATA_FILE, 'r') as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        return jsonify({"status": "error", "message": "Scraped courses data file not found"}), 500
-    except json.JSONDecodeError:
-        return jsonify({"status": "error", "message": "Error decoding scraped courses data"}), 500
+        request_data = request.get_json()
+        if not request_data:
+            return jsonify({"status": "error", "message": "No JSON data provided"}), 400
 
-    if "error" in data:
-        return jsonify({"status": "error", "message": data["error"]}), 500
+        query = request_data.get('query', 'python')
+        pages = int(request_data.get('page', 1))
+        language = request_data.get('language', 'english')
 
-    results = data
+        # Create unique temp file path
+        temp_file = os.path.join(app.config['UPLOAD_FOLDER'], f"courses_{query}_{pages}_{language}.json")
 
-    if not results:
-        return jsonify({"status": "error", "message": "No courses found"}), 404
+        # Run the spider process
+        process = multiprocessing.Process(
+            target=run_classcentral_spider_process,
+            args=(query, pages, temp_file, language)
+        )
+        process.start()
+        process.join()
 
-    return jsonify({
-        'result': results,
-        'scraped-courses': len(results)
-    })
+        # Add small delay to ensure file is written
+        time.sleep(2)
 
+        try:
+            # Read the file with UTF-8 encoding explicitly
+            with open(temp_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            os.remove(temp_file)  # Clean up
+        except FileNotFoundError:
+            return jsonify({"status": "error", "message": "Scraped data file not found"}), 500
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {str(e)}")
+            return jsonify({"status": "error", "message": "Error decoding scraped data"}), 500
+        except UnicodeDecodeError as e:
+            logger.error(f"Unicode decode error: {str(e)}")
+            return jsonify({"status": "error", "message": "Character encoding error in scraped data"}), 500
+
+        if not data:
+            return jsonify({"status": "error", "message": "No courses found"}), 404
+
+        return jsonify({
+            'status': 'success',
+            'result': data,
+            'scraped-courses': len(data),
+        })
+
+    except Exception as e:
+        logger.error(f"Error in scrape_courses: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
