@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: your-app-name
+    env: python
+    buildCommand: |
+      apt-get update
+      apt-get install -y chromium
+      chmod +x ./drivers/chromedriver
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app  # Replace with your actual start command
+    wsgi:
+      application: app
