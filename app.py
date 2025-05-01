@@ -96,24 +96,46 @@ def scrape_jobs():
         'scraped-jobs': len(results)
     })
 
+# @app.route('/process-resume', methods=['POST'])
+# def process_resume():
+#     if 'file' not in request.files:
+#         return jsonify({"error": "No file uploaded"}), 400
+
+#     file = request.files['file']
+#     if file.filename == '':
+#         return jsonify({"error": "No selected file"}), 400
+
+#     if not allowed_file(file.filename):
+#         return jsonify({"error": "Only PDF files are allowed"}), 400
+
+#     try:
+#         # Pass the file directly to avoid saving
+#         parsed_data = extract_resume_data(file)
+
+#         return jsonify(parsed_data)
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 @app.route('/process-resume', methods=['POST'])
 def process_resume():
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
-
+    
     file = request.files['file']
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
-
+    
     if not allowed_file(file.filename):
         return jsonify({"error": "Only PDF files are allowed"}), 400
 
     try:
-        # Pass the file directly to avoid saving
-        parsed_data = extract_resume_data(file)
-
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(pdf_path)
+        # Process PDF
+        parsed_data = extract_resume_data(pdf_path)
         return jsonify(parsed_data)
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
