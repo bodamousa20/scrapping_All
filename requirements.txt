@@ -1,5 +1,4 @@
-﻿amqp==5.3.1
-pdfx~=1.4.1
+amqp==5.3.1
 flask-cors==4.0.0
 annotated-types==0.7.0
 anyio==4.9.0
