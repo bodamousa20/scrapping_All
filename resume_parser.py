@@ -1,34 +1,28 @@
-import fitz
+import pdfx
 from io import BytesIO
 import json
 from groq import Groq
 import os
-
+import re
 # Initialize Groq client (use environment variable for safety)
 client = Groq(api_key='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')
 
 def extract_resume_data(file):
     """Extract text from PDF and process with Groq AI to return structured resume data."""
 
-    def read_pdf_file(file_obj):
-        """Reads text from a PDF file (stream or file path)."""
-        if isinstance(file_obj, str):
-            # If file_obj is a string, assume it's a file path
-            with open(file_obj, 'rb') as f:
-                file_bytes = f.read()
-        elif hasattr(file_obj, 'read'):
-            # If file_obj is a stream, read the content
-            file_bytes = file_obj.read()
-        else:
-            raise ValueError("Unsupported file type")
+    def read_pdf_file(pdf_path):
+        pdf = pdfx.PDFx(pdf_path)
+        text = pdf.get_text()
+        urls = pdf.get_references_as_dict().get("url", [])
+        return text + "\n\nExtracted URLs:\n" + "\n".join(urls)
 
-        # Open the PDF and extract text
-        doc = fitz.open(stream=BytesIO(file_bytes), filetype="pdf")
-        return "\n".join([page.get_text() for page in doc])
-
+    
     try:
         # Extract resume text from the file
         resume_text = read_pdf_file(file)
+        resume_text = re.sub(r'\s+', ' ', resume_text)  # Replace multiple whitespace with single space
+        resume_text = re.sub(r'[^\x00-\x7F]+', ' ', resume_text)  # Remove non-ASCII characters
+        resume_text = resume_text.strip()
 
         # Groq prompt to extract structured resume data
         prompt = f"""
