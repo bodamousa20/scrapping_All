@@ -4,7 +4,7 @@ annotated-types==0.7.0
 anyio==4.9.0
 async-timeout==5.0.1
 attrs==25.3.0
-PyMuPDF
+PyMuPDF==1.24.1
 Automat==24.8.1
 beautifulsoup4==4.13.4
 billiard==4.2.1
@@ -93,4 +93,3 @@ wsproto==1.2.0
 zipp==3.21.0
 zope.interface==7.2
 
-fitz~=0.0.1.dev2
