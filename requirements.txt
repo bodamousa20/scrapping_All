@@ -1,5 +1,4 @@
-﻿amqp==5.3.1
-pdfx
+amqp==5.3.1
 flask-cors==4.0.0
 annotated-types==0.7.0
 anyio==4.9.0
@@ -92,3 +91,5 @@ wrapt==1.17.2
 wsproto==1.2.0
 zipp==3.21.0
 zope.interface==7.2
+
+fitz~=0.0.1.dev2
