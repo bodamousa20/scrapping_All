@@ -1,16 +1,16 @@
-from flask import Flask, jsonify, request, send_file
+
+from flask import Flask, jsonify, request
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from wuzzufSpider.wuzzufSpider.spiders.wuzzuf import WuzzufSpider
 from wuzzufSpider.wuzzufSpider.spiders.courses import ClassCentralSpider
 import os
 import tempfile
-from werkzeug.utils import secure_filename
 import multiprocessing
 import logging
 import json
 import time
-from resume_parser import pdf_to_image, extract_resume_data
+from resume_parser import extract_resume_data
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -109,24 +109,15 @@ def process_resume():
         return jsonify({"error": "Only PDF files are allowed"}), 400
 
     try:
-        filename = secure_filename(file.filename)
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(pdf_path)
+        # Pass the file directly to avoid saving
+        parsed_data = extract_resume_data(file)
 
-        parsed_data = extract_resume_data(pdf_path)
-
-        response = {
-            "data": parsed_data,
-        }
-
-        return jsonify(response)
+        return jsonify(parsed_data)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        for f in os.listdir(app.config['UPLOAD_FOLDER']):
-            if f != 'preview.jpg':
-                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+
+
 @app.route("/scrape-courses", methods=["POST"])
 def scrape_courses():
     try:
