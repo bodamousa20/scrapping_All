@@ -10,7 +10,6 @@ import multiprocessing
 import logging
 import json
 import time
-from resume_parser import extract_resume_data
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -95,27 +94,6 @@ def scrape_jobs():
         'result': results,
         'scraped-jobs': len(results)
     })
-
-@app.route('/process-resume', methods=['POST'])
-def process_resume():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Only PDF files are allowed"}), 400
-
-    try:
-        # Pass the file directly to avoid saving
-        parsed_data = extract_resume_data(file)
-
-        return jsonify(parsed_data)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/scrape-courses", methods=["POST"])
