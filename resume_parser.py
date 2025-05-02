@@ -5,7 +5,7 @@ from groq import Groq
 import os
 
 # Initialize Groq client (use environment variable for safety)
-client = Groq(api_key='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')
+client = Groq(api_key='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')
 
 def extract_resume_data(file):
     """Extract text from PDF and process with Groq AI to return structured resume data."""
